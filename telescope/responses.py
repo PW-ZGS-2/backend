@@ -19,6 +19,7 @@ class TelescopeStateResponse(BaseModel):
         use_enum_values = True
 
 class RegisteredTelescope(BaseModel):
+    telescope_id: str
     model_name: str
     price_per_day: float
     location: Location
