@@ -33,8 +33,8 @@ class TelescopeSpecificationsDB(Base):
 
 class TelescopeDB(Base):
     __tablename__ = "telescopes"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    model_name = Column(String(100))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4())
+    telescope_name = Column(String(100))
     telescope_type = Column(Enum(TelescopeType), nullable=False)
     price_per_minute = Column(Float, nullable=False)
     owner = Column(String(100), nullable=False)
@@ -45,6 +45,7 @@ class TelescopeDB(Base):
     location = relationship("LocationDB")
     specifications = relationship("TelescopeSpecificationsDB")
 
+
 class TelescopeStateDB(Base):
     __tablename__ = "telescopestates"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -52,3 +53,16 @@ class TelescopeStateDB(Base):
     telescope_id = Column(UUID(as_uuid=True), ForeignKey("telescopes.id"), nullable=False)
     action_time = Column(TIMESTAMP, default=datetime.utcnow)
     action_type = Column(String(50), nullable=False)
+
+    telescope = relationship("TelescopeDB")
+
+class RoomDB(Base):
+    __tablename__ = "room"
+
+    room_id = Column(UUID(as_uuid=True), primary_key=True, index=True)
+    telescope_id = Column(UUID, ForeignKey("telescopes.id"))
+    creation_time = Column(TIMESTAMP, default=datetime.utcnow)
+    publisher_key = Column(String(500), nullable=False)
+
+    # Relationship back to the Telescope model
+    telescope = relationship("TelescopeDB")

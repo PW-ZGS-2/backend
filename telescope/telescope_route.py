@@ -1,4 +1,5 @@
 import os
+from copy import copy
 from typing import Generator
 from uuid import uuid4
 
@@ -7,7 +8,7 @@ import uuid
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from telescope.db_models import TelescopeDB, LocationDB, TelescopeSpecificationsDB, TelescopeStateDB
+from telescope.db_models import TelescopeDB, LocationDB, TelescopeSpecificationsDB, TelescopeStateDB, RoomDB
 from telescope.livekit_controller import LiveKitController
 from telescope.rest_models import Telescope, TelescopeSpecifications, MountType, OpticalDesign, Location, TelescopeState
 from telescope.responses import TelescopesResponse, RegisteredTelescope, TelescopeStateResponse, \
@@ -37,12 +38,13 @@ def get_db() -> Session:
 async def get_livekit_controller() -> Generator[LiveKitController, None, None]:
     controller = LiveKitController()  # Create controller when request is received
     yield controller  # Provide it to the endpoint
-    await controller.stop_session()  # Ensure proper cleanup after the request
+    await controller.close()  # Ensure proper cleanup after the request
     del controller
 
 
 @telescope_router.post("/", response_model=PostTelescopeResponse)
-async def post_telescope(telescope: Telescope, db: Session = Depends(get_db)):
+async def post_telescope(telescope: Telescope, db: Session = Depends(get_db),
+                         controller: LiveKitController = Depends(get_livekit_controller)):
     try:
         location = LocationDB(city=telescope.location.city, country=telescope.location.country,
                             latitude=telescope.location.latitude, longitude=telescope.location.longitude)
@@ -63,7 +65,7 @@ async def post_telescope(telescope: Telescope, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(specs)
 
-        new_telescope = TelescopeDB(model_name=telescope.model_name,
+        new_telescope = TelescopeDB(telescope_name=telescope.telescope_name,
                                   telescope_type=telescope.telescope_type,
                                   price_per_minute=telescope.price_per_minute,
                                   owner=telescope.owner,
@@ -73,8 +75,22 @@ async def post_telescope(telescope: Telescope, db: Session = Depends(get_db)):
         db.add(new_telescope)
         db.commit()
         db.refresh(new_telescope)
+        telescope_id = str(new_telescope.id)
 
-        return PostTelescopeResponse(telescope_id=str(new_telescope.id), publish_key = "231312")
+        room_info = await controller.create_room(telescope_id)
+        room_id = room_info.name
+        publisher_key = controller.create_publisher_token(telescope_id, room_id)
+
+        room = RoomDB(
+            telescope_id=telescope_id,
+            publisher_key=publisher_key,
+            room_id=room_id
+        )
+
+
+        db.add(room)
+        db.commit()
+        return PostTelescopeResponse(telescope_id=telescope_id, publish_token = publisher_key)
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -120,7 +136,7 @@ async def patch_telescope(telescope_id: str,telescope: Telescope, db: Session = 
     # Create the new telescope object
     new_telescope = TelescopeDB(
         id=telescope_id,  # Keep the same id
-        model_name=telescope.model_name,
+        telescope_name=telescope.telescope_name,
         telescope_type=telescope.telescope_type,
         price_per_minute=telescope.price_per_minute,
         owner=telescope.owner,
@@ -128,11 +144,13 @@ async def patch_telescope(telescope_id: str,telescope: Telescope, db: Session = 
         location_id=str(location.id),
         specifications_id=str(specs.id)
     )
+
+
     db.add(new_telescope)
     db.commit()
     db.refresh(new_telescope)
 
-    return PostTelescopeResponse(telescope_id=str(new_telescope.id), publish_key = "231312")
+    return PostTelescopeResponse(telescope_id=str(new_telescope.id), publish_token = "231312")
 
 
 @telescope_router.delete("/{telescope_id}")
@@ -178,7 +196,7 @@ async def get_telescopes_list(db: Session = Depends(get_db)):
         reserved_telescopes=reserved_telescopes,
         unavailable_telescopes=unavailable_telescopes,
         telescopes=[RegisteredTelescope(telescope_id = str(t.id),
-            model_name=t.model_name,
+            telescope_name=t.telescope_name,
             price_per_day=t.price_per_minute,
             location={"city": t.location.city, "country": t.location.country, "latitude": t.location.latitude,
                       "longitude": t.location.longitude},
@@ -195,8 +213,9 @@ async def get_telescope_details(telescope_id: str, db: Session = Depends(get_db)
     specs = db.query(TelescopeSpecificationsDB).filter(TelescopeSpecificationsDB.id == telescope.specifications_id).first()
     return specs
 
-@telescope_router.post("/{user_id}/{telescope_id}/{state}", response_model=StateResponse)
-async def lock_telescope(user_id: str, telescope_id: str, state: TelescopeStatus):
-    return StateResponse(subscribe_token="1244")
-
+@telescope_router.post("{user_id}/{telescope_id}/{state}", response_model=StateResponse)
+async def lock_telescope(user_id: str, telescope_id: str, state: TelescopeStatus,
+                         controller: LiveKitController = Depends(get_livekit_controller)):
+    sub_token = controller.create_subscriber_token("123","damianek","my-room")
+    return StateResponse(subscribe_token=sub_token)
 

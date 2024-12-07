@@ -1,13 +1,16 @@
+import os
+
 from livekit import api
-from typing import Generator
 
 
 class LiveKitController:
-    def __init__(self, url="http://localhost:7880", api_key="devkey", api_secret="secret"):
+    def __init__(self):
+        api_key = os.getenv("LIVEKIT_API_KEY")
+        api_secret = os.getenv("LIVEKIT_API_SECRET")
         self.lkapi = api.LiveKitAPI(
             url="http://localhost:7880",
-            api_key="<INSERT>",
-            api_secret="<INSERT>>",
+            api_key=api_key,
+            api_secret=api_secret,
         )
 
     async def create_room(self, name):
@@ -71,33 +74,3 @@ class LiveKitController:
         
     async def close(self):
         await self.lkapi.aclose()
-
-
-
-# async def main():
-#     lkc = LiveKitController()
-#
-#     # Create a room
-#     await lkc.create_room("my-room")
-#
-#     # List rooms
-#     rooms = await lkc.list_rooms()
-#     print("Rooms:")
-#     print(rooms)
-#
-#     # Get users in room
-#     users = await lkc.get_user_in_room("my-room")
-#     print("Users in room:")
-#     print(users)
-#
-#     token = lkc.create_publisher_token("telescope", "my-room")
-#     print("Publisher token:")
-#     print(token)
-#
-#     token = lkc.create_subscriber_token("watcher1", "Jan Kowalski", "my-room")
-#     print("Subscriber token:")
-#     print(token)
-#
-#     await lkc.close()
-#
-# asyncio.run(main())

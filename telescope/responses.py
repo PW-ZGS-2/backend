@@ -26,7 +26,7 @@ class TelescopeStateResponse(BaseModel):
 
 class RegisteredTelescope(BaseModel):
     telescope_id: str
-    model_name: str
+    telescope_name: str
     price_per_day: float
     location: Location
     status: TelescopeStatus

@@ -55,7 +55,7 @@ class TelescopeSpecifications(BaseModel):
     optical_design: OpticalDesign
 
 class Telescope(BaseModel):
-    model_name: str = "Model 1"
+    telescope_name: str = "Model 1"
     telescope_type: TelescopeType = TelescopeType.OPEN_SOURCE
     price_per_minute: float = "20"
     owner: str = "Damianek"
