@@ -12,7 +12,6 @@ class PostTelescopeResponse(BaseModel):
     publish_token: str
 
 
-
 class StateResponse(BaseModel):
     subscribe_token: str
 
@@ -23,6 +22,7 @@ class TelescopeStateResponse(BaseModel):
 
     class Config:
         use_enum_values = True
+
 
 class RegisteredTelescope(BaseModel):
     telescope_id: str
@@ -37,4 +37,3 @@ class TelescopesResponse(BaseModel):
     reserved_telescopes: int
     unavailable_telescopes: int
     telescopes: list[RegisteredTelescope]
-

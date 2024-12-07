@@ -3,10 +3,11 @@ from datetime import datetime
 from enum import Enum
 
 
-class TelescopeType(str,Enum):
+class TelescopeType(str, Enum):
     MOCK = "MOCK"
     OPEN_SOURCE = "OPEN_SOURCE"
     PROFESSIONAL = "PROFESSIONAL"
+
 
 class TelescopeStatus(str, Enum):
     FREE = "FREE"
@@ -20,6 +21,7 @@ class Location(BaseModel):
     latitude: float = 55.5
     longitude: float = 55.5
 
+
 class User(BaseModel):
     first_name: str
     second_name: str
@@ -27,12 +29,12 @@ class User(BaseModel):
     address: str | None
 
 
-
 class MountType(str, Enum):
     ALT_AZ = "ALT_AZ"  # Altitude-Azimuth mount
     EQ = "EQUATORIAL"  # Equatorial mount
     DOB = "DOBSONIAN"  # Dobsonian mount
     GO_TO = "GOTO"  # Motorized, computer-controlled mount
+
 
 # Enum for Optical Design Type
 class OpticalDesign(str, Enum):
@@ -42,6 +44,7 @@ class OpticalDesign(str, Enum):
     SCHMIDT = "Schmidt-Cassegrain"
     MAK = "Maksutov"
     COMBINATION = "Combination"
+
 
 class TelescopeSpecifications(BaseModel):
     aperture: float  # Diameter of the primary lens or mirror in cm
@@ -54,7 +57,8 @@ class TelescopeSpecifications(BaseModel):
     mount_type: MountType  # Type of mount (e.g., Alt-Az, Equatorial, Dobsonian)
     optical_design: OpticalDesign
 
-class Telescope(BaseModel):
+
+class TelescopeRequest(BaseModel):
     telescope_name: str = "Model 1"
     telescope_type: TelescopeType = TelescopeType.OPEN_SOURCE
     price_per_minute: float = "20"
@@ -65,7 +69,7 @@ class Telescope(BaseModel):
 
     class Config:
         use_enum_values = True
-        json_schema_exclude = {'id'}
+        json_schema_exclude = {"id"}
 
 
 class TelescopeState(BaseModel):

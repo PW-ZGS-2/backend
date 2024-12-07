@@ -6,9 +6,15 @@ from sqlalchemy import Column, String, Float, Integer, ForeignKey, TIMESTAMP, En
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
-from telescope.rest_models import MountType, OpticalDesign, TelescopeType, TelescopeStatus
+from telescope.rest_models import (
+    MountType,
+    OpticalDesign,
+    TelescopeType,
+    TelescopeStatus,
+)
 
 Base = declarative_base()
+
 
 class LocationDB(Base):
     __tablename__ = "locations"
@@ -17,6 +23,7 @@ class LocationDB(Base):
     country = Column(String(10), default="PL")
     latitude = Column(Float, default=55.5)
     longitude = Column(Float, default=55.5)
+
 
 class TelescopeSpecificationsDB(Base):
     __tablename__ = "telescopespecifications"
@@ -31,6 +38,7 @@ class TelescopeSpecificationsDB(Base):
     mount_type = Column(Enum(MountType), nullable=False)
     optical_design = Column(Enum(OpticalDesign), nullable=False)
 
+
 class TelescopeDB(Base):
     __tablename__ = "telescopes"
     id = Column(UUID(as_uuid=True), primary_key=True, default=lambda: uuid.uuid4())
@@ -40,7 +48,9 @@ class TelescopeDB(Base):
     owner = Column(String(100), nullable=False)
     status = Column(Enum(TelescopeStatus), nullable=False, default=TelescopeStatus.FREE)
     location_id = Column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=False)
-    specifications_id = Column(UUID(as_uuid=True), ForeignKey("telescopespecifications.id"), nullable=False)
+    specifications_id = Column(
+        UUID(as_uuid=True), ForeignKey("telescopespecifications.id"), nullable=False
+    )
 
     location = relationship("LocationDB")
     specifications = relationship("TelescopeSpecificationsDB")
@@ -50,11 +60,14 @@ class TelescopeStateDB(Base):
     __tablename__ = "telescopestates"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    telescope_id = Column(UUID(as_uuid=True), ForeignKey("telescopes.id"), nullable=False)
+    telescope_id = Column(
+        UUID(as_uuid=True), ForeignKey("telescopes.id"), nullable=False
+    )
     action_time = Column(TIMESTAMP, default=datetime.utcnow)
     action_type = Column(String(50), nullable=False)
 
     telescope = relationship("TelescopeDB")
+
 
 class RoomDB(Base):
     __tablename__ = "room"
