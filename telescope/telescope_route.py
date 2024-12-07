@@ -1,19 +1,12 @@
 from fastapi import APIRouter
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List
-from datetime import datetime
 import uuid
 
-from rest_models import Telescope, TelescopeSpecifications, MountType, OpticalDesign, Location
+from telescope.rest_models import Telescope, TelescopeSpecifications, MountType, OpticalDesign, Location
 from telescope.responses import TelescopeIdResponse, TelescopesResponse, RegisteredTelescope, TelescopeStateResponse
 from telescope.rest_models import TelescopeStatus
 
 telescope_router = APIRouter(prefix="/telescopes")
 
-# @telescope_router.get("/")
-# async def get_telescope(owner: Owner):
-#     return "hi"
 
 @telescope_router.post("/", response_model=TelescopeIdResponse)
 async def post_telescope(telescope: Telescope):
@@ -45,15 +38,3 @@ optical_design=OpticalDesign.REFLECTOR,)
 async def lock_telescope(telescope_id: str, state: TelescopeStatus):
     return TelescopeStateResponse(telescope_id=telescope_id, state=state)
 
-# @telescope_router.get("/telescopes/", response_model=List[Telescope])
-# async def list_telescopes():
-#     return "hi"
-#
-# @telescope_router.get("/telescope/{telescope_id}", response_model=Telescope)
-# async def get_telescope(telescope_id: int):
-#     return "hi"
-#
-# @telescope_router.post("/reserve/", response_model=Reservation)
-# async def reserve_telescope(reservation: Reservation):
-#     # Check if the telescope exists
-#     return "hi"

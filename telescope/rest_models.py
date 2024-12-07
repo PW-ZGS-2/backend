@@ -1,10 +1,6 @@
-import uuid
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
-
-from pydantic.json_schema import SkipJsonSchema
 
 
 class TelescopeType(str,Enum):
