@@ -19,10 +19,31 @@ async def patch_telescope(telescope_id: str,telescope: Telescope):
 
 @telescope_router.get("/list", response_model=TelescopesResponse)
 async def get_telescopes_list():
-    return TelescopesResponse(available_telescopes=1,reserved_telescopes=1,unavailable_telescopes=1,
+    return TelescopesResponse(available_telescopes=2,reserved_telescopes=1,unavailable_telescopes=0,
                               telescopes = [RegisteredTelescope(model_name = "model_1",price_per_day =20.2,
-                                                                location={"city": "warsaw","country": 'Pl',"latitude": 55,"longitude": 55},
-                                                                status = "AVAILABLE")])
+                                                                location={
+                "city": "Łódź",
+                "country": "Poland",
+                "latitude": 51.7592,
+                "longitude": 19.4559
+            },
+                                                                status = "FREE"),RegisteredTelescope(model_name = "model_1",price_per_day =20.2,
+                                                                location= {
+                "city": "Bydgoszcz",
+                "country": "Poland",
+                "latitude": 53.1235,
+                "longitude": 18.0084
+            },
+                                                                status = "LOCK"),
+                                            RegisteredTelescope(model_name="model_1", price_per_day=20.2,
+                                                                location= {
+                "city": "Gdańsk",
+                "country": "Poland",
+                "latitude": 54.3520,
+                "longitude": 18.6466
+            },
+                                                                status="FREE")
+                                            ])
 @telescope_router.get("/{telescope_id}", response_model=TelescopeSpecifications)
 async def get_telescope_details(telescope_id: str):
     return TelescopeSpecifications(aperture=0.0,
