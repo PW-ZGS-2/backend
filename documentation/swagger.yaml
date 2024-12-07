@@ -1,0 +1,386 @@
+openapi: 3.1.0
+info:
+  title: Telescope
+  description: TelescopeAPI
+  version: 0.1.0
+paths:
+  /telescopes/:
+    post:
+      tags:
+        - Telescope
+      summary: Post Telescope
+      operationId: post_telescope_telescopes__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelescopeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostTelescopeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /telescopes/{telescope_id}:
+    put:
+      tags:
+        - Telescope
+      summary: Patch Telescope
+      operationId: patch_telescope_telescopes__telescope_id__put
+      parameters:
+        - name: telescope_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Telescope Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelescopeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostTelescopeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - Telescope
+      summary: Delete Telescope
+      operationId: delete_telescope_telescopes__telescope_id__delete
+      parameters:
+        - name: telescope_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Telescope Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+        - Telescope
+      summary: Get Telescope Details
+      operationId: get_telescope_details_telescopes__telescope_id__get
+      parameters:
+        - name: telescope_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Telescope Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelescopeSpecifications'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /telescopes/list:
+    get:
+      tags:
+        - Telescope
+      summary: Get Telescopes List
+      operationId: get_telescopes_list_telescopes_list_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelescopesResponse'
+  /telescopes/{user_id}/{telescope_id}/{state}:
+    post:
+      tags:
+        - Telescope
+      summary: Lock Telescope
+      operationId: lock_telescope_telescopes__user_id___telescope_id___state__post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: User Id
+        - name: telescope_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Telescope Id
+        - name: state
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TelescopeStatus'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Location:
+      properties:
+        city:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: City
+          default: warsaw
+        country:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Country
+          default: pl
+        latitude:
+          type: number
+          title: Latitude
+          default: 55.5
+        longitude:
+          type: number
+          title: Longitude
+          default: 55.5
+      type: object
+      title: Location
+    MountType:
+      type: string
+      enum:
+        - ALT_AZ
+        - EQUATORIAL
+        - DOBSONIAN
+        - GOTO
+      title: MountType
+    OpticalDesign:
+      type: string
+      enum:
+        - Reflector
+        - Refractor
+        - Catadioptric
+        - Schmidt-Cassegrain
+        - Maksutov
+        - Combination
+      title: OpticalDesign
+    PostTelescopeResponse:
+      properties:
+        telescope_id:
+          type: string
+          title: Telescope Id
+        publish_token:
+          type: string
+          title: Publish Token
+      type: object
+      required:
+        - telescope_id
+        - publish_token
+      title: PostTelescopeResponse
+    RegisteredTelescope:
+      properties:
+        telescope_id:
+          type: string
+          title: Telescope Id
+        telescope_name:
+          type: string
+          title: Telescope Name
+        price_per_day:
+          type: number
+          title: Price Per Day
+        location:
+          $ref: '#/components/schemas/Location'
+        status:
+          $ref: '#/components/schemas/TelescopeStatus'
+      type: object
+      required:
+        - telescope_id
+        - telescope_name
+        - price_per_day
+        - location
+        - status
+      title: RegisteredTelescope
+    StateResponse:
+      properties:
+        subscribe_token:
+          type: string
+          title: Subscribe Token
+      type: object
+      required:
+        - subscribe_token
+      title: StateResponse
+    TelescopeRequest:
+      properties:
+        telescope_name:
+          type: string
+          title: Telescope Name
+          default: Model 1
+        telescope_type:
+          $ref: '#/components/schemas/TelescopeType'
+          default: OPEN_SOURCE
+        price_per_minute:
+          type: number
+          title: Price Per Minute
+          default: '20'
+        owner:
+          type: string
+          title: Owner
+          default: Damianek
+        location:
+          $ref: '#/components/schemas/Location'
+        status:
+          $ref: '#/components/schemas/TelescopeStatus'
+          default: FREE
+        specifications:
+          $ref: '#/components/schemas/TelescopeSpecifications'
+      type: object
+      required:
+        - location
+        - specifications
+      title: TelescopeRequest
+    TelescopeSpecifications:
+      properties:
+        aperture:
+          type: number
+          title: Aperture
+        focal_length:
+          type: number
+          title: Focal Length
+        focal_ratio:
+          type: number
+          title: Focal Ratio
+        weight:
+          type: number
+          title: Weight
+        length:
+          type: number
+          title: Length
+        width:
+          type: number
+          title: Width
+        height:
+          type: number
+          title: Height
+        mount_type:
+          $ref: '#/components/schemas/MountType'
+        optical_design:
+          $ref: '#/components/schemas/OpticalDesign'
+      type: object
+      required:
+        - aperture
+        - focal_length
+        - focal_ratio
+        - weight
+        - length
+        - width
+        - height
+        - mount_type
+        - optical_design
+      title: TelescopeSpecifications
+    TelescopeStatus:
+      type: string
+      enum:
+        - FREE
+        - LOCK
+        - DAMAGED
+      title: TelescopeStatus
+    TelescopeType:
+      type: string
+      enum:
+        - MOCK
+        - OPEN_SOURCE
+        - PROFESSIONAL
+      title: TelescopeType
+    TelescopesResponse:
+      properties:
+        available_telescopes:
+          type: integer
+          title: Available Telescopes
+        reserved_telescopes:
+          type: integer
+          title: Reserved Telescopes
+        unavailable_telescopes:
+          type: integer
+          title: Unavailable Telescopes
+        telescopes:
+          items:
+            $ref: '#/components/schemas/RegisteredTelescope'
+          type: array
+          title: Telescopes
+      type: object
+      required:
+        - available_telescopes
+        - reserved_telescopes
+        - unavailable_telescopes
+        - telescopes
+      title: TelescopesResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
