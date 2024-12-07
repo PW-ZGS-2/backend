@@ -5,10 +5,16 @@ from pydantic import BaseModel, ConfigDict
 from telescope.rest_models import Location, TelescopeStatus
 
 
-class TelescopeIdResponse(BaseModel):
+class PostTelescopeResponse(BaseModel):
     model_config = ConfigDict(json_encoders={UUID: str})
 
     telescope_id: str
+    publish_token: str
+
+
+
+class StateResponse(BaseModel):
+    subscribe_token: str
 
 
 class TelescopeStateResponse(BaseModel):

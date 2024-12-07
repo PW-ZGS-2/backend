@@ -1,4 +1,5 @@
 import os
+from typing import Generator
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
@@ -7,8 +8,10 @@ import uuid
 from sqlalchemy.exc import SQLAlchemyError
 
 from telescope.db_models import TelescopeDB, LocationDB, TelescopeSpecificationsDB, TelescopeStateDB
-from telescope.rest_models import Telescope, TelescopeSpecifications, MountType, OpticalDesign, Location
-from telescope.responses import TelescopeIdResponse, TelescopesResponse, RegisteredTelescope, TelescopeStateResponse
+from telescope.livekit_controller import LiveKitController
+from telescope.rest_models import Telescope, TelescopeSpecifications, MountType, OpticalDesign, Location, TelescopeState
+from telescope.responses import TelescopesResponse, RegisteredTelescope, TelescopeStateResponse, \
+    StateResponse, PostTelescopeResponse
 from telescope.rest_models import TelescopeStatus
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -30,9 +33,15 @@ def get_db() -> Session:
         yield db  # This will be used in the route handlers
     finally:
         db.close()
+#
+# def get_livekit_controller() -> Generator[LiveKitController, None, None]:
+#     controller = LiveKitController()  # Create controller when request is received
+#     yield controller  # Provide it to the endpoint
+#     await controller.stop_session()  # Ensure proper cleanup after the request
+#     del controller
 
 
-@telescope_router.post("/", response_model=TelescopeIdResponse)
+@telescope_router.post("/", response_model=PostTelescopeResponse)
 async def post_telescope(telescope: Telescope, db: Session = Depends(get_db)):
     try:
         location = LocationDB(city=telescope.location.city, country=telescope.location.country,
@@ -65,12 +74,12 @@ async def post_telescope(telescope: Telescope, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_telescope)
 
-        return TelescopeIdResponse(telescope_id=str(new_telescope.id))
+        return PostTelescopeResponse(telescope_id=str(new_telescope.id), publish_key = "231312")
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-@telescope_router.put("/{telescope_id}", response_model=TelescopeIdResponse)
+@telescope_router.put("/{telescope_id}", response_model=PostTelescopeResponse)
 async def patch_telescope(telescope_id: str,telescope: Telescope, db: Session = Depends(get_db)):
     telescope_id = str(telescope_id)
     existing_telescope = db.query(TelescopeDB).filter(TelescopeDB.id == telescope_id).first()
@@ -123,10 +132,10 @@ async def patch_telescope(telescope_id: str,telescope: Telescope, db: Session = 
     db.commit()
     db.refresh(new_telescope)
 
-    return TelescopeIdResponse(telescope_id=str(new_telescope.id))
+    return PostTelescopeResponse(telescope_id=str(new_telescope.id), publish_key = "231312")
 
 
-@telescope_router.delete("/{telescope_id}", response_model=TelescopeIdResponse)
+@telescope_router.delete("/{telescope_id}")
 async def delete_telescope(telescope_id: str, db: Session = Depends(get_db)):
     telescope_id = str(telescope_id)
 
@@ -153,7 +162,7 @@ async def delete_telescope(telescope_id: str, db: Session = Depends(get_db)):
 
 
     # Step 6: Return the ID of the deleted telescope
-    return TelescopeIdResponse(telescope_id=telescope_id)
+    return PostTelescopeResponse(telescope_id=telescope_id)
 
 
 @telescope_router.get("/list", response_model=TelescopesResponse)
@@ -186,7 +195,8 @@ async def get_telescope_details(telescope_id: str, db: Session = Depends(get_db)
     specs = db.query(TelescopeSpecificationsDB).filter(TelescopeSpecificationsDB.id == telescope.specifications_id).first()
     return specs
 
-@telescope_router.post("/{telescope_id}/{state}")
-async def lock_telescope(telescope_id: str, state: TelescopeStatus):
-    return TelescopeStateResponse(telescope_id=telescope_id, state=state)
+@telescope_router.post("{user_id}/{telescope_id}/{state}", response_model=StateResponse)
+async def lock_telescope(user_id: str, telescope_id: str, state: TelescopeStatus):
+    return StateResponse(subscribe_token="1244")
+
 

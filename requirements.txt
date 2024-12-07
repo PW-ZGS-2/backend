@@ -7,3 +7,6 @@ pydantic==2.9.2
 SQLAlchemy==2.0.32
 pandas==2.2.2
 psycopg2-binary
+livekit
+livekit-api
+numpy
