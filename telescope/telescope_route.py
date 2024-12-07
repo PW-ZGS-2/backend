@@ -213,9 +213,11 @@ async def get_telescope_details(telescope_id: str, db: Session = Depends(get_db)
     specs = db.query(TelescopeSpecificationsDB).filter(TelescopeSpecificationsDB.id == telescope.specifications_id).first()
     return specs
 
-@telescope_router.post("{user_id}/{telescope_id}/{state}", response_model=StateResponse)
+@telescope_router.post("/{user_id}/{telescope_id}/{state}", response_model=StateResponse)
 async def lock_telescope(user_id: str, telescope_id: str, state: TelescopeStatus,
-                         controller: LiveKitController = Depends(get_livekit_controller)):
-    sub_token = controller.create_subscriber_token("123","damianek","my-room")
+                         controller: LiveKitController = Depends(get_livekit_controller), db: Session = Depends(get_db)):
+    room = db.query(RoomDB).filter(RoomDB.telescope_id == telescope_id).first()
+    sub_token = controller.create_subscriber_token(user_id,telescope_id,str(room.room_id))
+
     return StateResponse(subscribe_token=sub_token)
 
