@@ -34,11 +34,11 @@ def get_db() -> Session:
     finally:
         db.close()
 #
-# def get_livekit_controller() -> Generator[LiveKitController, None, None]:
-#     controller = LiveKitController()  # Create controller when request is received
-#     yield controller  # Provide it to the endpoint
-#     await controller.stop_session()  # Ensure proper cleanup after the request
-#     del controller
+async def get_livekit_controller() -> Generator[LiveKitController, None, None]:
+    controller = LiveKitController()  # Create controller when request is received
+    yield controller  # Provide it to the endpoint
+    await controller.stop_session()  # Ensure proper cleanup after the request
+    del controller
 
 
 @telescope_router.post("/", response_model=PostTelescopeResponse)
@@ -195,7 +195,7 @@ async def get_telescope_details(telescope_id: str, db: Session = Depends(get_db)
     specs = db.query(TelescopeSpecificationsDB).filter(TelescopeSpecificationsDB.id == telescope.specifications_id).first()
     return specs
 
-@telescope_router.post("{user_id}/{telescope_id}/{state}", response_model=StateResponse)
+@telescope_router.post("/{user_id}/{telescope_id}/{state}", response_model=StateResponse)
 async def lock_telescope(user_id: str, telescope_id: str, state: TelescopeStatus):
     return StateResponse(subscribe_token="1244")
 
