@@ -7,8 +7,9 @@ class LiveKitController:
     def __init__(self):
         api_key = os.getenv("LIVEKIT_API_KEY")
         api_secret = os.getenv("LIVEKIT_API_SECRET")
+        url = os.getenv("LIVEKIT_URL")
         self.lkapi = api.LiveKitAPI(
-            url="http://localhost:7880",
+            url=url,
             api_key=api_key,
             api_secret=api_secret,
         )

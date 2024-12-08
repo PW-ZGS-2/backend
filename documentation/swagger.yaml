@@ -160,6 +160,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /telescopes/control/{telescope_id}:
+    post:
+      tags:
+        - Telescope
+      summary: Control Telescope
+      operationId: control_telescope_telescopes__telescope_id__post
+      parameters:
+        - name: telescope_id
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlMessage'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
 components:
   schemas:
     HTTPValidationError:
@@ -384,3 +403,10 @@ components:
         - msg
         - type
       title: ValidationError
+    ControlMessage:
+      type: object
+      properties:
+        type:
+          type: string
+        value:
+          type: number
