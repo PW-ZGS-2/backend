@@ -4,7 +4,7 @@ from uuid import uuid4
 from sqlalchemy.exc import SQLAlchemyError
 
 from common.rest_interface import DefaultHandler, RestResponse
-from telescope.db_models import LocationDB, TelescopeSpecificationsDB, TelescopeDB, RoomDB
+from telescope.db_models import LocationDB, TelescopeSpecificationsDB, TelescopeDB, RoomDB, TelescopeStateDB
 from telescope.responses import PostTelescopeResponse
 from telescope.rest_models import TelescopeRequest
 
@@ -80,3 +80,36 @@ class PostTelescopeHandler(DefaultHandler):
             telescope_id=self.telescope_id, publisher_key=self.publisher_key, room_id=room_id
         )
         self.db.add(room)
+
+
+class DeleteTelescopeHandler(DefaultHandler):
+    def __init__(self, db):
+        self.db = db
+
+    def run(self, telescope_id) -> RestResponse:
+
+        existing_telescope = (
+            self.db.query(TelescopeDB).filter(TelescopeDB.id == telescope_id).first()
+        )
+
+        if not existing_telescope:
+            raise HTTPException(status_code=404, detail="Telescope not found")
+        self.db.query(RoomDB).filter(RoomDB.telescope_id==telescope_id).delete()
+        self.db.query(TelescopeStateDB).filter(
+            TelescopeStateDB.telescope_id == telescope_id
+        ).delete()
+        self.db.commit()
+        self.db.query(TelescopeDB).filter(TelescopeDB.id == telescope_id).delete()
+        self.db.commit()
+        self.db.query(TelescopeSpecificationsDB).filter(
+            TelescopeSpecificationsDB.id == existing_telescope.specifications_id
+        ).delete()
+
+        self.db.query(LocationDB).filter(
+            LocationDB.id == existing_telescope.location_id
+        ).delete()
+        self.db.commit()
+
+        self.db.delete(existing_telescope)
+        self.db.commit()
+        return PostTelescopeResponse(telescope_id=telescope_id)

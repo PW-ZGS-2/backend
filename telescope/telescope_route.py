@@ -1,8 +1,10 @@
 import os
+from datetime import datetime
 from typing import Generator
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
+from fastapi_utilities import repeat_every
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -13,7 +15,7 @@ from telescope.db_models import (
     TelescopeStateDB,
     RoomDB,
 )
-from telescope.handler import PostTelescopeHandler
+from telescope.handler import PostTelescopeHandler, DeleteTelescopeHandler
 from telescope.livekit_controller import LiveKitController
 from telescope.rest_models import (
     TelescopeRequest,
@@ -23,7 +25,7 @@ from telescope.responses import (
     TelescopesResponse,
     RegisteredTelescope,
     StateResponse,
-    PostTelescopeResponse,
+    PostTelescopeResponse
 )
 from telescope.rest_models import TelescopeStatus
 from sqlalchemy import create_engine
@@ -46,14 +48,34 @@ def get_db() -> Session:
     finally:
         db.close()
 
-
+# @telescope_router.on_event("startup")
+# @repeat_every(seconds = 20)
+# async def check_rooms(db: Session = Depends(get_db)) -> None:
+#     live_kit = LiveKitController()
+#
+#     print("started after session")
+#
+#     try:
+#         db = SessionLocal()
+#         room_ids = db.query(RoomDB.room_id).all()
+#         print("loaded rooms")
+#         for room_id in room_ids:
+#             room_id_str = str(room_id[0])  # Unpack tuple and convert room_id to string
+#             telescope_id = room_id_str
+#             active_users = await live_kit.get_user_in_room(room_id_str)
+#
+#             # If no users are present in the room, delete the telescope
+#             if telescope_id not in active_users:
+#                 handler = DeleteTelescopeHandler(db)
+#                 handler.run(room_id[0])
+#     finally:
+#         db.close()
 #
 async def get_livekit_controller() -> Generator[LiveKitController, None, None]:
     controller = LiveKitController()
     yield controller
     await controller.close()
     del controller
-
 
 @telescope_router.post("/", response_model=PostTelescopeResponse)
 async def post_telescope(
@@ -142,31 +164,9 @@ async def patch_telescope(
 async def delete_telescope(telescope_id: str, db: Session = Depends(get_db)):
     telescope_id = str(telescope_id)
 
-    existing_telescope = (
-        db.query(TelescopeDB).filter(TelescopeDB.id == telescope_id).first()
-    )
-
-    if not existing_telescope:
-        raise HTTPException(status_code=404, detail="Telescope not found")
-
-    db.delete(existing_telescope)
-
-    db.query(TelescopeStateDB).filter(
-        TelescopeStateDB.telescope_id == telescope_id
-    ).delete()
-
-    db.query(TelescopeSpecificationsDB).filter(
-        TelescopeSpecificationsDB.id == existing_telescope.specifications_id
-    ).delete()
-
-    db.query(LocationDB).filter(
-        LocationDB.id == existing_telescope.location_id
-    ).delete()
-
-    db.commit()
-
-    # Step 6: Return the ID of the deleted telescope
-    return PostTelescopeResponse(telescope_id=telescope_id)
+    handler = DeleteTelescopeHandler(db)
+    response = handler.run(telescope_id)  # Make s
+    return response
 
 
 @telescope_router.get("/list", response_model=TelescopesResponse)
@@ -220,7 +220,6 @@ async def get_telescope_details(telescope_id: str, db: Session = Depends(get_db)
     )
     return specs
 
-
 @telescope_router.post(
     "/{user_id}/{telescope_id}/{state}", response_model=StateResponse
 )
@@ -231,9 +230,78 @@ async def lock_telescope(
     controller: LiveKitController = Depends(get_livekit_controller),
     db: Session = Depends(get_db),
 ):
+    telescope = db.query(TelescopeDB).filter(TelescopeDB.id == telescope_id).first()
+    if telescope.status == TelescopeStatus.LOCK:
+        pass
+    elif telescope.status == TelescopeStatus.FREE:
+        telescope.status = TelescopeStatus.LOCK
+        db.commit()
+        db.refresh(telescope)
+
     room = db.query(RoomDB).filter(RoomDB.telescope_id == telescope_id).first()
     sub_token = controller.create_subscriber_token(
         user_id, telescope_id, str(room.room_id)
     )
 
     return StateResponse(subscribe_token=sub_token)
+
+
+# @telescope_router.post(
+#     "/{user_id}/{telescope_id}/{state}", response_model=StateResponse
+# )
+# async def lock_telescope(
+#     user_id: str,
+#     telescope_id: str,
+#     state: TelescopeStatus,
+#     controller: LiveKitController = Depends(get_livekit_controller),
+#     db: Session = Depends(get_db),
+# ):
+#     try:
+#         # Check the current state of the telescope
+#         telescope = db.query(TelescopeDB).filter(TelescopeDB.id == telescope_id).first()
+#         if not telescope:
+#             raise HTTPException(status_code=404, detail="Telescope not found")
+#
+#         # If the state is LOCKED, add a new state record with action_type = "WATCH"
+#         if telescope.status == TelescopeStatus.LOCK:
+#             # Create a new record in TelescopeStateDB with the action_type 'WATCH'
+#             new_state = TelescopeStateDB(
+#                 user_id=user_id,
+#                 telescope_id=telescope.id,
+#                 action_type="WATCH",  # Action type is WATCH
+#                 action_time=datetime.utcnow(),
+#             )
+#             db.add(new_state)
+#             db.commit()
+#             db.refresh(new_state)
+#
+#         elif telescope.status == TelescopeStatus.FREE:
+#             # Modify the state of the telescope to LOCKED
+#             telescope.status = TelescopeStatus.LOCK
+#             db.commit()
+#             db.refresh(telescope)
+#
+#             # Create a new record in TelescopeStateDB with action_type 'LOCKED'
+#             new_state = TelescopeStateDB(
+#                 user_id=user_id,
+#                 telescope_id=telescope.id,
+#                 action_type="LOCKED",  # Action type is LOCKED when changing state
+#                 action_time=datetime.utcnow(),
+#             )
+#             db.add(new_state)
+#             db.commit()
+#             db.refresh(new_state)
+#
+#         else:
+#             raise HTTPException(status_code=400, detail="Invalid telescope state")
+#
+#         room = db.query(RoomDB).filter(RoomDB.telescope_id == telescope_id).first()
+#         sub_token = controller.create_subscriber_token(
+#             user_id, telescope_id, str(room.room_id)
+#         )
+#
+#         return StateResponse(subscribe_token=sub_token)
+#     except SQLAlchemyError as e:
+#         db.rollback()
+#         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+#

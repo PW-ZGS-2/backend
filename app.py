@@ -1,11 +1,20 @@
-from fastapi import FastAPI
+import os
+
+from fastapi import FastAPI, Depends
+from fastapi_utilities import repeat_every
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 from starlette.middleware.cors import CORSMiddleware
 
-from telescope.telescope_route import telescope_router
+from pricing.pricing_route import pricing_router
+from telescope.db_models import RoomDB
+from telescope.handler import DeleteTelescopeHandler
+from telescope.livekit_controller import LiveKitController
+from telescope.telescope_route import telescope_router, SessionLocal
 
 app = FastAPI(
-    title="Telescope",
-    description="TelescopeAPI",
+    title="SkyShare",
+    description="SkyShareAPI",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -15,7 +24,11 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+
 app.include_router(telescope_router, tags=["Telescope"])
+app.include_router(pricing_router, tags= ["Pricing"])
+
+
 
 import uvicorn
 

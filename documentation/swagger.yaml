@@ -160,25 +160,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
-  /telescopes/control/{telescope_id}:
-    post:
+  /pricing/client/{user_id}:
+    get:
       tags:
-        - Telescope
-      summary: Control Telescope
-      operationId: control_telescope_telescopes__telescope_id__post
+        - Pricing
+      summary: User Pricing
+      operationId: user_pricing_pricing_client__user_id__get
       parameters:
-        - name: telescope_id
+        - name: user_id
           in: path
           required: true
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ControlMessage'
-        required: true
+          schema:
+            type: string
+            title: User Id
       responses:
         '200':
           description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPricing'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /pricing/sharer/{user_id}:
+    get:
+      tags:
+        - Pricing
+      summary: Sharer Pricing
+      operationId: sharer_pricing_pricing_sharer__user_id__get
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPricing'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     HTTPValidationError:
@@ -277,6 +310,23 @@ components:
       required:
         - subscribe_token
       title: StateResponse
+    TelescopePricing:
+      properties:
+        usage_time:
+          type: number
+          title: Usage Time
+        telescope_id:
+          type: string
+          title: Telescope Id
+        price:
+          type: number
+          title: Price
+      type: object
+      required:
+        - usage_time
+        - telescope_id
+        - price
+      title: TelescopePricing
     TelescopeRequest:
       properties:
         telescope_name:
@@ -382,6 +432,25 @@ components:
         - unavailable_telescopes
         - telescopes
       title: TelescopesResponse
+    UserPricing:
+      properties:
+        total_cost:
+          type: number
+          title: Total Cost
+        user_id:
+          type: string
+          title: User Id
+        telescopes:
+          items:
+            $ref: '#/components/schemas/TelescopePricing'
+          type: array
+          title: Telescopes
+      type: object
+      required:
+        - total_cost
+        - user_id
+        - telescopes
+      title: UserPricing
     ValidationError:
       properties:
         loc:
@@ -403,10 +472,3 @@ components:
         - msg
         - type
       title: ValidationError
-    ControlMessage:
-      type: object
-      properties:
-        type:
-          type: string
-        value:
-          type: number
